@@ -12,6 +12,7 @@ out/
 # Logs
 logs/
 *.log
+data/metrics.txt
 
 # OS and editor files
 .DS_Store
