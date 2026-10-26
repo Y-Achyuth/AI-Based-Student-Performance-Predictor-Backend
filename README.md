@@ -51,18 +51,23 @@ connect directly to PostgreSQL.
 
 ## Deploy to Render
 
-1. Create a PostgreSQL database in Render in the same region as the web service.
-2. Create a **Web Service** from the backend Git repository, select **Docker**,
-   and use the repository root as the Docker build context.
-3. Add `DATABASE_URL` using the database's **Internal Database URL**. The
-   backend converts Render's `postgres://`/`postgresql://` URL to a JDBC URL and
-   enables SSL automatically.
-4. Add `CORS_ALLOWED_ORIGINS` with the exact Vercel frontend origin, such as
-   `https://your-project.vercel.app`.
-5. Set the Render health check path to `/spp/actuator/health`.
-6. Set `VITE_API_BASE_URL` in Vercel to
-   `https://<your-render-service>.onrender.com/spp/api`.
+The [`render.yaml`](./render.yaml) Blueprint is in the root of the backend
+repository. In the Render dashboard, choose **New + → Blueprint**, connect the
+backend repository, and create the resources in the Blueprint. It provisions a
+Docker web service and a persistent PostgreSQL database in the same region.
+Render builds the service from this repository's root using `Dockerfile`,
+provides the database's internal connection URL as `DATABASE_URL`, and checks
+`/spp/actuator/health`. The backend converts Render's
+`postgres://`/`postgresql://` URL to JDBC and enables SSL.
 
+The Blueprint asks you to provide `CORS_ALLOWED_ORIGINS` during setup. Enter
+the exact public Vercel origin, such as `https://your-project.vercel.app`.
+After deployment, set `VITE_API_BASE_URL` in Vercel to
+`https://<your-render-service>.onrender.com/spp/api`.
+
+The web service uses Render's free instance plan and can spin down when idle.
+The PostgreSQL database uses the `basic-256mb` plan for persistent storage; this
+is a paid Render resource. Change the plans in `render.yaml` to suit your needs.
 Flyway creates the PostgreSQL schema during service startup. It intentionally
 does not insert student names or phone numbers; load authorized student records
 into the database without committing personal data to either Git repository.
