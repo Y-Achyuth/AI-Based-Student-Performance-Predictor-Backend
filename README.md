@@ -51,26 +51,31 @@ connect directly to PostgreSQL.
 
 ## Deploy to Render
 
-The [`render.yaml`](./render.yaml) Blueprint is in the root of the backend
-repository. In the Render dashboard, choose **New + → Blueprint**, connect the
-backend repository, and create the resources in the Blueprint. It provisions a
-Docker web service and a persistent PostgreSQL database in the same region.
-Render builds the service from this repository's root using `Dockerfile`,
-provides the database's internal connection URL as `DATABASE_URL`, and checks
-`/spp/actuator/health`. The backend converts Render's
-`postgres://`/`postgresql://` URL to JDBC and enables SSL.
+Create the database and web service separately in the Render dashboard:
 
-The Blueprint asks you to provide `CORS_ALLOWED_ORIGINS` during setup. Enter
-the exact public Vercel origin, such as `https://your-project.vercel.app`.
-After deployment, set `VITE_API_BASE_URL` in Vercel to
+1. Create a **PostgreSQL** database. Choose the region where you want to run the
+   web service and note the database name.
+2. Create a **Web Service** from the backend Git repository. Select **Docker**,
+   leave **Root Directory** blank (the `Dockerfile` is at the repository root),
+   and select the same region as the database.
+3. After both resources are created, open the web service's **Environment**
+   settings. Add `DATABASE_URL` and set it to the database's **Internal
+   Database URL** from the Render database's **Connect** page. Do not use
+   `localhost`, the external database URL, or a URL from another database.
+4. Add `CORS_ALLOWED_ORIGINS` with the exact deployed frontend origin, for
+   example `https://your-project.vercel.app`.
+5. Set the web service health check path to `/spp/actuator/health`, save the
+   environment changes, and redeploy the service.
+
+The backend converts Render's `postgres://`/`postgresql://` `DATABASE_URL` to a
+JDBC URL and enables SSL. If the service log says it is connecting to
+`localhost:5432`, `DATABASE_URL` is missing or incorrect in the **web
+service's** environment settings. Flyway creates the PostgreSQL schema during
+startup; it does not insert student names or phone numbers. Load only authorized
+student records, and keep the database URL and Twilio credentials in Render
+environment settings rather than source control.
+
+After deployment, set Vercel's `VITE_API_BASE_URL` to
 `https://<your-render-service>.onrender.com/spp/api`.
-
-The web service uses Render's free instance plan and can spin down when idle.
-The PostgreSQL database uses the `basic-256mb` plan for persistent storage; this
-is a paid Render resource. Change the plans in `render.yaml` to suit your needs.
-Flyway creates the PostgreSQL schema during service startup. It intentionally
-does not insert student names or phone numbers; load authorized student records
-into the database without committing personal data to either Git repository.
-Keep the database URL and all Twilio credentials in Render environment settings,
-not in source control. For local development, use a PostgreSQL database URL and
-add `http://localhost:5173` to `CORS_ALLOWED_ORIGINS`.
+For local development, use a PostgreSQL database URL and add
+`http://localhost:5173` to `CORS_ALLOWED_ORIGINS`.
